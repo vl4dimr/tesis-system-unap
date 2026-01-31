@@ -11,7 +11,7 @@ async function main() {
     { nombre: "Facultad de Ingenieria Civil y Arquitectura", codigo: "FICA" },
     { nombre: "Facultad de Ingenieria de Minas", codigo: "FIM" },
     { nombre: "Facultad de Ingenieria Geologica y Metalurgica", codigo: "FIGM" },
-    { nombre: "Facultad de Ingenieria Mecanica Electrica, Electronica y Sistemas", codigo: "FIMEES" },
+    { nombre: "Facultad de Ingenieria Mecanica Electrica Electronica y Sistemas", codigo: "FIMEES" },
     { nombre: "Facultad de Ciencias Agrarias", codigo: "FCA" },
     { nombre: "Facultad de Medicina Veterinaria y Zootecnia", codigo: "FMVZ" },
     { nombre: "Facultad de Ciencias Biologicas", codigo: "FCB" },
@@ -46,9 +46,9 @@ async function main() {
     { nombre: "Ingenieria de Minas", facultad: "Facultad de Ingenieria de Minas" },
     { nombre: "Ingenieria Geologica", facultad: "Facultad de Ingenieria Geologica y Metalurgica" },
     { nombre: "Ingenieria Metalurgica", facultad: "Facultad de Ingenieria Geologica y Metalurgica" },
-    { nombre: "Ingenieria Mecanica Electrica", facultad: "Facultad de Ingenieria Mecanica Electrica, Electronica y Sistemas" },
-    { nombre: "Ingenieria Electronica", facultad: "Facultad de Ingenieria Mecanica Electrica, Electronica y Sistemas" },
-    { nombre: "Ingenieria de Sistemas", facultad: "Facultad de Ingenieria Mecanica Electrica, Electronica y Sistemas" },
+    { nombre: "Ingenieria Mecanica Electrica", facultad: "Facultad de Ingenieria Mecanica Electrica Electronica y Sistemas" },
+    { nombre: "Ingenieria Electronica", facultad: "Facultad de Ingenieria Mecanica Electrica Electronica y Sistemas" },
+    { nombre: "Ingenieria de Sistemas", facultad: "Facultad de Ingenieria Mecanica Electrica Electronica y Sistemas" },
     { nombre: "Ingenieria Agronomica", facultad: "Facultad de Ciencias Agrarias" },
     { nombre: "Ingenieria Topografica y Agrimensura", facultad: "Facultad de Ciencias Agrarias" },
     { nombre: "Medicina Veterinaria y Zootecnia", facultad: "Facultad de Medicina Veterinaria y Zootecnia" },
@@ -102,7 +102,7 @@ async function main() {
   // Crear usuario admin de prueba
   const adminPassword = await hash("admin123", 12)
 
-  const adminUser = await prisma.user.upsert({
+  await prisma.user.upsert({
     where: { email: "admin@unap.edu.pe" },
     update: {},
     create: {
@@ -114,35 +114,178 @@ async function main() {
     },
   })
 
-  console.log("Usuario admin creado:", adminUser.email)
+  console.log("Usuario admin creado: admin@unap.edu.pe / admin123")
 
-  // Crear usuario tesista de prueba
-  const tesistaPassword = await hash("test123", 12)
-
+  // Obtener escuela de informatica
   const escuelaInformatica = await prisma.escuela.findFirst({
     where: { nombre: "Ingenieria Estadistica e Informatica" },
   })
 
+  const escuelaMedicina = await prisma.escuela.findFirst({
+    where: { nombre: "Medicina Humana" },
+  })
+
+  // Crear usuarios demo
+  const demoPassword = await hash("demo123", 12)
+
   if (escuelaInformatica) {
-    const tesistaUser = await prisma.user.upsert({
-      where: { email: "tesista@unap.edu.pe" },
+    // Usuario 1 - Tesista Informatica
+    const user1 = await prisma.user.upsert({
+      where: { email: "maria.lopez@unap.edu.pe" },
       update: {},
       create: {
-        email: "tesista@unap.edu.pe",
-        password: tesistaPassword,
-        nombres: "Juan Carlos",
-        apellidoPaterno: "Garcia",
-        apellidoMaterno: "Lopez",
-        dni: "12345678",
+        email: "maria.lopez@unap.edu.pe",
+        password: demoPassword,
+        nombres: "Maria Elena",
+        apellidoPaterno: "Lopez",
+        apellidoMaterno: "Quispe",
+        dni: "70123456",
         tipo: "TESISTA",
         escuelaId: escuelaInformatica.id,
       },
     })
 
-    console.log("Usuario tesista creado:", tesistaUser.email)
+    console.log("Usuario demo: maria.lopez@unap.edu.pe / demo123")
+
+    // Crear tesis de ejemplo para Maria
+    const tesis1 = await prisma.tesis.upsert({
+      where: { id: "demo-tesis-1" },
+      update: {},
+      create: {
+        id: "demo-tesis-1",
+        titulo: "Sistema de Gestion Academica basado en Inteligencia Artificial para la Universidad Nacional del Altiplano",
+        tituloIngles: "Academic Management System based on Artificial Intelligence for the National University of the Altiplano",
+        userId: user1.id,
+        escuelaId: escuelaInformatica.id,
+        area: "Ingenieria de Software",
+        tema: "Inteligencia Artificial",
+        lineaInvestigacion: "Sistemas Inteligentes",
+        estado: "DATOS_COMPLETOS",
+        resumen: "La presente investigacion tiene como objetivo desarrollar un sistema de gestion academica utilizando tecnicas de inteligencia artificial para mejorar los procesos administrativos de la Universidad Nacional del Altiplano. Se implementaron algoritmos de aprendizaje automatico para la prediccion del rendimiento academico y recomendacion de cursos.",
+        resumenIngles: "This research aims to develop an academic management system using artificial intelligence techniques to improve the administrative processes of the National University of the Altiplano. Machine learning algorithms were implemented for academic performance prediction and course recommendation.",
+      },
+    })
+
+    // Jurados para tesis 1
+    await prisma.tesisJurado.deleteMany({ where: { tesisId: tesis1.id } })
+    await prisma.tesisJurado.createMany({
+      data: [
+        { tesisId: tesis1.id, nombre: "Juan Carlos Mamani Apaza", rol: "PRESIDENTE", grado: "Dr." },
+        { tesisId: tesis1.id, nombre: "Rosa Maria Condori Flores", rol: "PRIMER_MIEMBRO", grado: "Mg." },
+        { tesisId: tesis1.id, nombre: "Pedro Luis Huanca Ticona", rol: "SEGUNDO_MIEMBRO", grado: "Mg." },
+        { tesisId: tesis1.id, nombre: "Carlos Alberto Ramos Villanueva", rol: "ASESOR", grado: "Dr." },
+      ],
+    })
+
+    // Palabras clave para tesis 1
+    await prisma.palabraClave.deleteMany({ where: { tesisId: tesis1.id } })
+    await prisma.palabraClave.createMany({
+      data: [
+        { tesisId: tesis1.id, palabra: "Inteligencia Artificial", idioma: "es" },
+        { tesisId: tesis1.id, palabra: "Gestion Academica", idioma: "es" },
+        { tesisId: tesis1.id, palabra: "Machine Learning", idioma: "es" },
+        { tesisId: tesis1.id, palabra: "Artificial Intelligence", idioma: "en" },
+        { tesisId: tesis1.id, palabra: "Academic Management", idioma: "en" },
+        { tesisId: tesis1.id, palabra: "Machine Learning", idioma: "en" },
+      ],
+    })
+
+    console.log("Tesis demo creada para Maria")
   }
 
-  console.log("Seeding completed!")
+  if (escuelaMedicina) {
+    // Usuario 2 - Tesista Medicina
+    const user2 = await prisma.user.upsert({
+      where: { email: "carlos.huanca@unap.edu.pe" },
+      update: {},
+      create: {
+        email: "carlos.huanca@unap.edu.pe",
+        password: demoPassword,
+        nombres: "Carlos Alberto",
+        apellidoPaterno: "Huanca",
+        apellidoMaterno: "Mamani",
+        dni: "70234567",
+        tipo: "TESISTA",
+        escuelaId: escuelaMedicina.id,
+      },
+    })
+
+    console.log("Usuario demo: carlos.huanca@unap.edu.pe / demo123")
+
+    // Crear tesis de ejemplo para Carlos
+    const tesis2 = await prisma.tesis.upsert({
+      where: { id: "demo-tesis-2" },
+      update: {},
+      create: {
+        id: "demo-tesis-2",
+        titulo: "Prevalencia de Anemia en Ninos Menores de 5 Anos en la Region Puno Durante el Periodo 2020-2024",
+        tituloIngles: "Prevalence of Anemia in Children Under 5 Years Old in the Puno Region During the Period 2020-2024",
+        userId: user2.id,
+        escuelaId: escuelaMedicina.id,
+        area: "Salud Publica",
+        tema: "Nutricion Infantil",
+        lineaInvestigacion: "Epidemiologia",
+        estado: "BORRADOR",
+        resumen: "El presente estudio tiene como objetivo determinar la prevalencia de anemia en ninos menores de 5 anos en la Region Puno durante el periodo 2020-2024, identificando los factores de riesgo asociados y proponiendo estrategias de intervencion.",
+      },
+    })
+
+    // Jurados para tesis 2
+    await prisma.tesisJurado.deleteMany({ where: { tesisId: tesis2.id } })
+    await prisma.tesisJurado.createMany({
+      data: [
+        { tesisId: tesis2.id, nombre: "Ana Maria Flores Quispe", rol: "PRESIDENTE", grado: "Dra." },
+        { tesisId: tesis2.id, nombre: "Miguel Angel Condori Ramos", rol: "PRIMER_MIEMBRO", grado: "Dr." },
+        { tesisId: tesis2.id, nombre: "Lucia Esperanza Mamani Torres", rol: "SEGUNDO_MIEMBRO", grado: "Mg." },
+        { tesisId: tesis2.id, nombre: "Jorge Luis Apaza Vilca", rol: "ASESOR", grado: "Dr." },
+      ],
+    })
+
+    // Palabras clave para tesis 2
+    await prisma.palabraClave.deleteMany({ where: { tesisId: tesis2.id } })
+    await prisma.palabraClave.createMany({
+      data: [
+        { tesisId: tesis2.id, palabra: "Anemia", idioma: "es" },
+        { tesisId: tesis2.id, palabra: "Nutricion Infantil", idioma: "es" },
+        { tesisId: tesis2.id, palabra: "Salud Publica", idioma: "es" },
+        { tesisId: tesis2.id, palabra: "Anemia", idioma: "en" },
+        { tesisId: tesis2.id, palabra: "Child Nutrition", idioma: "en" },
+        { tesisId: tesis2.id, palabra: "Public Health", idioma: "en" },
+      ],
+    })
+
+    console.log("Tesis demo creada para Carlos")
+  }
+
+  // Usuario 3 - Tesista simple para pruebas
+  if (escuelaInformatica) {
+    await prisma.user.upsert({
+      where: { email: "demo@unap.edu.pe" },
+      update: {},
+      create: {
+        email: "demo@unap.edu.pe",
+        password: demoPassword,
+        nombres: "Usuario",
+        apellidoPaterno: "Demo",
+        apellidoMaterno: "Prueba",
+        dni: "70345678",
+        tipo: "TESISTA",
+        escuelaId: escuelaInformatica.id,
+      },
+    })
+
+    console.log("Usuario demo: demo@unap.edu.pe / demo123")
+  }
+
+  console.log("")
+  console.log("=== SEED COMPLETADO ===")
+  console.log("")
+  console.log("Usuarios disponibles:")
+  console.log("  admin@unap.edu.pe / admin123 (Admin)")
+  console.log("  maria.lopez@unap.edu.pe / demo123 (Tesista con tesis)")
+  console.log("  carlos.huanca@unap.edu.pe / demo123 (Tesista con tesis)")
+  console.log("  demo@unap.edu.pe / demo123 (Tesista sin tesis)")
+  console.log("")
 }
 
 main()

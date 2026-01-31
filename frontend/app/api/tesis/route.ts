@@ -81,10 +81,15 @@ export async function POST(req: NextRequest) {
         })
       }
 
-      // Crear palabras clave en español
-      if (validatedData.palabrasClaveEspanol && validatedData.palabrasClaveEspanol.length > 0) {
+      // Crear palabras clave en español (filtrar vacías y duplicadas)
+      const palabrasEspanol = [...new Set(
+        (validatedData.palabrasClaveEspanol || [])
+          .map(p => p.trim())
+          .filter(p => p.length > 0)
+      )]
+      if (palabrasEspanol.length > 0) {
         await tx.palabraClave.createMany({
-          data: validatedData.palabrasClaveEspanol.map((palabra) => ({
+          data: palabrasEspanol.map((palabra) => ({
             tesisId: nuevaTesis.id,
             palabra,
             idioma: "es",
@@ -92,10 +97,15 @@ export async function POST(req: NextRequest) {
         })
       }
 
-      // Crear palabras clave en inglés
-      if (validatedData.palabrasClaveIngles && validatedData.palabrasClaveIngles.length > 0) {
+      // Crear palabras clave en inglés (filtrar vacías y duplicadas)
+      const palabrasIngles = [...new Set(
+        (validatedData.palabrasClaveIngles || [])
+          .map(p => p.trim())
+          .filter(p => p.length > 0)
+      )]
+      if (palabrasIngles.length > 0) {
         await tx.palabraClave.createMany({
-          data: validatedData.palabrasClaveIngles.map((palabra) => ({
+          data: palabrasIngles.map((palabra) => ({
             tesisId: nuevaTesis.id,
             palabra,
             idioma: "en",
