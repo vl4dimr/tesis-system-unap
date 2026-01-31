@@ -1,0 +1,156 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Modelos
+
+model User {
+  id              String    @id @default(cuid())
+  email           String    @unique
+  password        String
+  nombres         String
+  apellidoPaterno String
+  apellidoMaterno String?
+  dni             String?   @unique
+  tipo            String    @default("TESISTA")
+  escuelaId       String?
+  escuela         Escuela?  @relation(fields: [escuelaId], references: [id])
+  tesis           Tesis[]
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model Facultad {
+  id        String    @id @default(cuid())
+  nombre    String    @unique
+  codigo    String?   @unique
+  escuelas  Escuela[]
+  createdAt DateTime  @default(now())
+}
+
+model Escuela {
+  id          String    @id @default(cuid())
+  nombre      String
+  codigo      String?   @unique
+  facultadId  String
+  facultad    Facultad  @relation(fields: [facultadId], references: [id])
+  usuarios    User[]
+  tesis       Tesis[]
+  createdAt   DateTime  @default(now())
+
+  @@unique([nombre, facultadId])
+}
+
+model Tesis {
+  id                     String      @id @default(cuid())
+  titulo                 String
+  tituloIngles           String?
+  resumen                String?
+  resumenIngles          String?
+
+  // Relación con usuario (tesista)
+  userId                 String
+  user                   User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Relación con escuela
+  escuelaId              String
+  escuela                Escuela     @relation(fields: [escuelaId], references: [id])
+
+  // Datos adicionales
+  area                   String?
+  tema                   String?
+  lineaInvestigacion     String?
+  fechaSustentacion      DateTime?
+
+  // Estado del proceso
+  estado                 String      @default("BORRADOR")
+
+  // Archivos
+  archivoOriginalUrl     String?
+  archivoOriginalNombre  String?
+  archivoFormateadoUrl   String?
+  archivoFormateadoNombre String?
+
+  // Validación
+  validacionCompletada   Boolean     @default(false)
+  porcentajeCumplimiento Float?
+
+  // Relaciones
+  jurados                TesisJurado[]
+  palabrasClave          PalabraClave[]
+  validaciones           Validacion[]
+
+  // Timestamps
+  createdAt              DateTime    @default(now())
+  updatedAt              DateTime    @updatedAt
+
+  @@index([userId])
+  @@index([escuelaId])
+  @@index([estado])
+}
+
+model TesisJurado {
+  id        String    @id @default(cuid())
+  tesisId   String
+  tesis     Tesis     @relation(fields: [tesisId], references: [id], onDelete: Cascade)
+  nombre    String
+  rol       String
+  grado     String?
+  email     String?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([tesisId])
+}
+
+model PalabraClave {
+  id          String   @id @default(cuid())
+  tesisId     String
+  tesis       Tesis    @relation(fields: [tesisId], references: [id], onDelete: Cascade)
+  palabra     String
+  idioma      String   @default("es")
+
+  createdAt   DateTime @default(now())
+
+  @@unique([tesisId, palabra, idioma])
+  @@index([tesisId])
+}
+
+model Validacion {
+  id          String    @id @default(cuid())
+  tesisId     String
+  tesis       Tesis     @relation(fields: [tesisId], references: [id], onDelete: Cascade)
+
+  tipo        String
+  categoria   String?
+  elemento    String?
+
+  esValido    Boolean
+  valorActual String?
+  valorEsperado String?
+  mensaje     String?
+  severidad   String    @default("ERROR")
+  sugerencia  String?
+
+  createdAt   DateTime  @default(now())
+
+  @@index([tesisId])
+  @@index([tipo])
+}
+
+model ProcesamientoHistorial {
+  id              String   @id @default(cuid())
+  tesisId         String
+  tipo            String
+  estado          String
+  mensaje         String?
+  detalles        String?
+  iniciadoEn      DateTime @default(now())
+  finalizadoEn    DateTime?
+}
